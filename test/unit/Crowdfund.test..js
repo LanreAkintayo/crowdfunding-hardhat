@@ -280,6 +280,8 @@ Make sure that you can pledge to a project
             const ownerTest1BalanceBefore = await test1.balanceOf(deployer)
             const ownerTest2BalanceBefore = await test2.balanceOf(deployer)
 
+            const totalRaisedInDollars = fromWei(await crowdfund.getTotalAmountRaisedInDollars(id))
+
             const claimTx2 = await crowdfund.claim(id)
             await claimTx2.wait(1)
 
@@ -289,14 +291,6 @@ Make sure that you can pledge to a project
             expect(ownerTest1BalanceAfter).to.equal(ownerTest1BalanceBefore.add(toWei(70)))
             expect(ownerTest2BalanceAfter).to.equal(ownerTest2BalanceBefore.add(toWei(50)))
 
-
-
-
-
-
-            // const backersAfterClaiming = await crowdfund.getBackers(id)
-            const [[, , amount2]]= await crowdfund.getBackers(id)
-            const amount2ToString = amount2.toString()
 
             
 
