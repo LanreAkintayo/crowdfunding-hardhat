@@ -1,13 +1,10 @@
 const { isCrowdsaleWallet } = require("@ethersproject/json-wallets");
 const { expect, assert } = require("chai");
 const { network, deployments, ethers, getNamedAccounts } = require("hardhat");
-const { developmentChains } = require("../../helper-hardhat-config");
+const { developmentChains, networkConfig } = require("../../helper-hardhat-config");
 const {
-  FLEX,
   fastForwardTheTime,
-  percent,
   duration,
-  readableFlex,
   toWei,
   fromWei,
   now
@@ -21,16 +18,18 @@ You can close a project that you've launched already provided that the startDay 
 Make sure that you can pledge to a project 
 */
 
-!developmentChains.includes(network.name)
+developmentChains.includes(network.name)
   ? describe.skip
   : describe("Crowdfunding", function () {
-      let crowdfund, test1, test2
+      let crowdfund, wbnb, dai, xrp, busd
       let x_usd_price_feed
       let deployer, user1, user2, user3, user4, user5
       
       beforeEach(async () => {
    
         deployer = (await getNamedAccounts()).deployer
+
+        const {wbnbAddress, daiAddress, xrpAddress, busdAddress} = networkConfig[network.id]
         
         const users = await getUnnamedAccounts();
         user1 = await ethers.getSigner(users[0]);
@@ -39,126 +38,55 @@ Make sure that you can pledge to a project
         user4 = await ethers.getSigner(users[3]);
         user5 = await ethers.getSigner(users[4]);
        
-
-        if (developmentChains.includes(network.name)){
-          await deployments.fixture(["all"])
-        }
-        
         crowdfund = await ethers.getContract("Crowdfund", deployer )
-        x_usd_price_feed = await ethers.getContract("MockV3Aggregator", deployer)
-        test1 = await ethers.getContract("TEST1", deployer)
-        test2 = await ethers.getContract("TEST2", deployer)
+      
+        wbnb = await ethers.getContractAt("IWBNB", wbnbAddress)
+        dai = await ethers.getContractAt("IERC20", daiAddress)
+        xrp = await ethers.getContractAt("IERC20", xrpAddress)
+        busd = await ethers.getContractAt("IERC20", busdAddress)
 
-        /*
-        0.1 BTC
 
-BNB / USD	0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526
-
-10 BUSD = 0xeD24FC36d5Ee211Ea25A80239Fb8C4Cfd80f12Ee
-BUSD / USD	0x9331b55D9830EF609A2aBCfAc0FBCE050A52fdEa
-
-10 DAI = 0xEC5dCb5Dbf4B114C9d0F65BcCAb49EC54F6A0867
-DAI / USD	0xE4eE17114774713d2De0eC0f035d4F7665fc025D
-
-0.1 ETH =  
-
-10 USDC = 0x64544969ed7EBf5f083679233325356EbE738930
-USDC / USD	0x90c069C4538adAc136E051052E14c1cD799C41B7
-
-10 USDT = 0x337610d27c682E347C9cD60BD4b3b107C9d34dDd
-USDT / USD	0xEca2605f0BCF2BA5966372C99837b1F182d3D620
-
-10 XRP = 0xa83575490D7df4E2F47b7D38ef351a2722cA45b9
-XRP / USD	0x4046332373C24Aed1dC8bAd489A04E187833B28d
-        
-        */
-
-        const supportedTokensAddress = [test1.address, test2.address]
+        const supportedTokensAddress = [wbnbAddress, daiAddress, xrpAddress, busdAddress]
+        const correspondingPriceFeeds = [bnbUsdPriceFeed, daiUsdPriceFeed, xrpUsdPriceFeed, busdUsdPriceFeed]
 
         const setSupportedTokensTx = await crowdfund.setSupportedTokensAddress(supportedTokensAddress) 
         await setSupportedTokensTx.wait(1);
 
         for (let i = 0; i < supportedTokensAddress.length; i++){
-          let setTokenToPriceFeedTx = await crowdfund.setTokenToPriceFeed(supportedTokensAddress[i], x_usd_price_feed.address)
+          let setTokenToPriceFeedTx = await crowdfund.setTokenToPriceFeed(supportedTokensAddress[i], correspondingPriceFeeds[i])
           await setTokenToPriceFeedTx.wait(1)
         }
     
       });
 
-     
-        it("should map token to price feed correctly", async function(){
-          assert.equal(await crowdfund.tokenToPriceFeed(test1.address), x_usd_price_feed.address)
-          assert.equal(await crowdfund.tokenToPriceFeed(test2.address), x_usd_price_feed.address)
-        })
-
-        it ("should set the array of supported tokens correctly", async function(){
-          const tokensArray = await crowdfund.getSupportedTokensAddress()
-
-          assert.equal(tokensArray.length, 2)
-
-          // Trying to add two more tokens that are already in the array
-          const supportedTokensAddress = [test1.address, test2.address]
-
-          const setSupportedTokensTx = await crowdfund.setSupportedTokensAddress(supportedTokensAddress) 
-          await setSupportedTokensTx.wait(1);
-
-          assert.equal(tokensArray.length, 2)
-
-        })
-
-
         describe("Launching a Project", function() {
           beforeEach(async () => {
-            const startDay = (await now()) + duration.days(1)
-            const fundDuration = duration.days(10)
-            const goal = toWei(100) // 100 dollars
+            const startDay = await now()
+            const fundDuration = duration.minutes(2)
+            const goal = toWei(10) // 100 dollars
 
             const launchTx = await crowdfund.launch(startDay, fundDuration, goal)
             await launchTx.wait(1)
 
           })
-          it("should store project correctly in the projects mapping", async function() {
-            const [owner, id, startDay, endDay, goal] = await crowdfund.projects(0)
+          it("", async function() {
+            // Pledge to the project
 
-            assert.equal(owner, deployer)
+            // Wait for the duration to elapse (Make sure that the goal is reached)
 
+            // Check if the owner is going to clam successfully
+          })
+
+          it("", async function() {
+            // Pledge to the project
+
+            // Wait for the duration to elapse (Make sure that the goal is not reached)
+
+            // Check if the owner is going to be refunded
           })
 
         })
 
-        describe("Closing a project", function() {
-          beforeEach(async () => {
-            const startDay = (await now()) + duration.days(1)
-            const fundDuration = duration.days(10)
-            const goal = toWei(100) // 100 dollars
-
-            const launchTx = await crowdfund.launch(startDay, fundDuration, goal)
-            await launchTx.wait(1)
-          })
-       
-          it("should close the project when starting time has not elapsed", async function() {
-            const [owner, id, startDay, endDay, goal] = await crowdfund.projects(0)
-
-            const closeTx = await crowdfund.close(id)
-            await closeTx.wait(1)
-
-            const projectAfterClosing = await crowdfund.projects(0)
-
-            assert.equal(projectAfterClosing[0], ethers.constants.AddressZero)
-
-          })
-
-          it("should not be able to close the project when starting time has elapsed", async function() {
-            const [owner, id, startDay, endDay, goal] = await crowdfund.projects(0)
-
-            await fastForwardTheTime(duration.days(1) + 50)
-
-            // await crowdfund.close(id)
-
-            await expect(crowdfund.close(id)).to.be.revertedWithCustomError(crowdfund, "StartedAlready")
-
-          })
-        })
 
         describe("Pledging to a project", function() {
           

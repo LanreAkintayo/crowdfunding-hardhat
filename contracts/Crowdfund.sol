@@ -34,7 +34,7 @@ error GoalAlreadyReached();
 
 contract Crowdfund is ReentrancyGuard, Ownable {
 
-    address constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+    address constant WBNB = 0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd;
 
     uint256 id;
 
