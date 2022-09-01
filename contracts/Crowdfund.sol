@@ -16,6 +16,7 @@ getProjectInfo(uint id): This returns all the project info.
  */
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./interfaces/IWBNB.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -28,8 +29,13 @@ error TokenNotSupported();
 error InvalidPledge();
 error GoalNotMet();
 error NotAvailableForPledging();
+error ProjectStillOpen();
+error GoalAlreadyReached();
 
 contract Crowdfund is ReentrancyGuard, Ownable {
+
+    address constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+
     uint256 id;
 
     enum Status {
@@ -136,7 +142,7 @@ contract Crowdfund is ReentrancyGuard, Ownable {
         uint256 _id,
         address tokenAddress,
         uint256 amount
-    ) external {
+    ) external nonReentrant{
         int256 index = checkPledgingWithToken(_id, tokenAddress);
 
         require(index >= 0, "Not found");
@@ -153,7 +159,14 @@ contract Crowdfund is ReentrancyGuard, Ownable {
                 token.balanceOf(address(this)) >= amount,
                 "Insufficient Balance"
             );
-            token.transfer(msg.sender, amount);
+
+            if (address(token) == WBNB){
+                IWBNB(WBNB).withdraw(amount);
+                (bool success, ) = msg.sender.call{value: amount}("");
+                require(success, "Transfer failed");
+            } else{
+                token.transfer(msg.sender, amount);
+            }
         } else {
             revert InvalidPledge();
         }
@@ -164,14 +177,24 @@ contract Crowdfund is ReentrancyGuard, Ownable {
         BackerInfo[] memory backersInfo = backers[_id];
         uint256 totalAmountRaisedInDollars = getTotalAmountRaisedInDollars(_id);
         console.log("This is the total amount raised in dollars: ", totalAmountRaisedInDollars);
+        
+         if (block.timestamp < projects[_id].endDay){
+            revert ProjectStillOpen();
+        }
         if (totalAmountRaisedInDollars < projects[_id].goal) {
             revert GoalNotMet();
         }
-
+      
         for (uint256 i = 0; i < backersInfo.length; i++) {
             BackerInfo memory backerInfo = backersInfo[i];
             IERC20 token = IERC20(backerInfo.tokenAddress);
-            token.transfer(msg.sender, backerInfo.amount);
+            if (address(token) == WBNB){
+                IWBNB(WBNB).withdraw(backerInfo.amount);
+                (bool success, ) = msg.sender.call{value: backerInfo.amount}("");
+                require(success, "Transaction failed");
+            } else{
+                token.transfer(msg.sender, backerInfo.amount);
+            }
 
             backers[_id][i].amount -= backerInfo.amount;
         }
@@ -198,6 +221,37 @@ contract Crowdfund is ReentrancyGuard, Ownable {
         }
     }
 
+    function refund(uint _id) external nonReentrant{
+        Project memory project = projects[_id];
+
+        uint totalAmountRaisedInDollars = getTotalAmountRaisedInDollars(_id);
+
+        if (block.timestamp < project.endDay){
+            revert ProjectStillOpen();
+        }
+        if (totalAmountRaisedInDollars >= project.goal){
+            revert GoalAlreadyReached();
+        }
+        BackerInfo[] memory projectBackers = backers[_id];
+
+        for (uint i = 0; i < projectBackers.length; i++){
+            BackerInfo memory backer = projectBackers[i];
+            IERC20 token = IERC20(backer.tokenAddress);
+
+            if (address(token) == WBNB){
+                IWBNB(WBNB).withdraw(backer.amount);
+                (bool success, ) = backer.backerAddress.call{value: backer.amount}("");
+                require(success, "Transaction failed");
+            } else{
+                token.transfer(backer.backerAddress, backer.amount);
+            }
+
+            backers[_id][i].amount -= backer.amount;
+        }
+
+        
+    }
+
     /*******************************************************************************************************
                                             External functions that are view
   ******************************************************************************************************** */
@@ -210,8 +264,8 @@ contract Crowdfund is ReentrancyGuard, Ownable {
         return supportedTokensAddress;
     }
 
-    function getBackers(uint id) external view returns (BackerInfo[] memory){
-        return backers[id];
+    function getBackers(uint _id) external view returns (BackerInfo[] memory){
+        return backers[_id];
     }
 
     /*******************************************************************************************************

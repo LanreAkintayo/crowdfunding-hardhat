@@ -49,6 +49,16 @@ Make sure that you can pledge to a project
         test1 = await ethers.getContract("TEST1", deployer)
         test2 = await ethers.getContract("TEST2", deployer)
 
+        /*
+        0.1 BTC
+10 BUSD = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56
+10 DAI
+0.1 ETH
+10 USDC
+10 USDT
+10 XRP
+        
+        */
 
         const supportedTokensAddress = [test1.address, test2.address]
 
