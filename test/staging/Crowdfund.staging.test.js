@@ -265,7 +265,6 @@ developmentChains.includes(network.name)
           const [, id, , , ] = await crowdfund.projects(4);
 
           // Pledge to the project
-
           await wbnb.deposit({value: toWei(0.05)})
           await wbnb.approve(crowdfund.address, toWei(0.02))
 
