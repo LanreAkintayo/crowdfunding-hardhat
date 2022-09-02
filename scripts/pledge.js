@@ -45,19 +45,10 @@ async function pledgeAndclaim() {
 
     await crowdfund.deployed()
 
-
-
     wbnb = await ethers.getContractAt("IWBNB", wbnbAddress);
-    dai = await ethers.getContractAt("IERC20", daiAddress);
-    xrp = await ethers.getContractAt("IERC20", xrpAddress);
-    busd = await ethers.getContractAt("IERC20", busdAddress);
 
-    const supportedTokensAddress = [
-      wbnbAddress, daiAddress, xrpAddress, busdAddress
-    ];
-    const correspondingPriceFeeds = [
-      bnbUsdPriceFeed, daiUsdPriceFeed, xrpUsdPriceFeed, busdUsdPriceFeed
-    ];
+    const supportedTokensAddress = [wbnbAddress];
+    const correspondingPriceFeeds = [bnbUsdPriceFeed];
 
     const setSupportedTokensTx = await crowdfund.setSupportedTokensAddress(
       supportedTokensAddress
@@ -74,7 +65,7 @@ async function pledgeAndclaim() {
 
        // Launch a project
        const startDay = await now();
-       const fundDuration = duration.seconds(40);
+       const fundDuration = duration.seconds(30);
        const goal = toWei(0.049); // 100 dollars
 
        const launchTx = await crowdfund
@@ -89,12 +80,12 @@ async function pledgeAndclaim() {
        await wbnb.deposit({value: toWei(0.05)})
        await wbnb.approve(crowdfund.address, toWei(0.025))
 
-         const backerBalanceBefore = fromWei(await wbnb.balanceOf(deployer));
+        const backerBalanceBefore = fromWei(await wbnb.balanceOf(deployer));
        const backerBnbBalanceBefore = fromWei(await ethers.provider.getBalance(deployer))
 
        const code = await ethers.provider.getCode(crowdfund.address)
 
-       const pledgeTx = await crowdfund.pledge(id, wbnb.address, toWei(0.02));
+       const pledgeTx = await crowdfund.pledge(id, wbnbAddress, toWei(0.02));
        await pledgeTx.wait(1);
 
        // Wait for the duration to elapse (Make sure that the goal is reached)
@@ -113,18 +104,24 @@ async function pledgeAndclaim() {
          await crowdfund.getTotalAmountRaisedInDollars(id)
        );
 
-       const claimTx = await crowdfund.connect(user1).claim(id);
-       await claimTx.wait(1);
+       const delayInMilliseconds = Number(fundDuration) * 1000
 
-       const projectOwnerBalanceAfter = fromWei(
-         await wbnb.balanceOf(user1.address)
-       );
-       const projectOwnerBnbBalanceAfter = fromWei(await ethers.provider.getBalance(user1.address))
+       setTimeout(async function() {
+        //your code to be executed after 1 second
+        const claimTx = await crowdfund.connect(user1).claim(id);
+        await claimTx.wait(1);
+ 
+        const projectOwnerBalanceAfter = fromWei(
+          await wbnb.balanceOf(user1.address)
+        );
+        const projectOwnerBnbBalanceAfter = fromWei(await ethers.provider.getBalance(user1.address))
+ 
+        
+        const totalRaisedInDollarsAfter = fromWei(
+          await crowdfund.getTotalAmountRaisedInDollars(id)
+        );
 
-       
-       const totalRaisedInDollarsAfter = fromWei(
-         await crowdfund.getTotalAmountRaisedInDollars(id)
-       );
+      }, delayInMilliseconds);
 
 
 }
