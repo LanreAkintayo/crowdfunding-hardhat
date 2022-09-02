@@ -189,10 +189,19 @@ contract Crowdfund is ReentrancyGuard, Ownable {
             BackerInfo memory backerInfo = backersInfo[i];
             IERC20 token = IERC20(backerInfo.tokenAddress);
             if (address(token) == WBNB){
+                console.log("address of token ", address(token));
+                console.log("WBNB: ", WBNB);
+                console.log("backerInfo.amount", backerInfo.amount);
+                console.log("BNB Balance before: ", address(this).balance);
+
+
                 IWBNB(WBNB).withdraw(backerInfo.amount);
-                (bool success, ) = msg.sender.call{value: backerInfo.amount}("");
-                require(success, "Transaction failed");
+                console.log("BNB Balance after: ", address(this).balance);
+
+                // (bool success, ) = msg.sender.call{value: backerInfo.amount}("");
+                // require(success, "Transaction failed");
             } else{
+                console.log("I am here instead");
                 token.transfer(msg.sender, backerInfo.amount);
             }
 
