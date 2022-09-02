@@ -49,37 +49,40 @@ developmentChains.includes(network.name)
         user4 = await ethers.getSigner(users[3]);
         user5 = await ethers.getSigner(users[4]);
 
-        // crowdfund = await ethers.getContract("Crowdfund", deployer);
+        // // crowdfund = await ethers.getContract("Crowdfund", deployer);
         Crowdfund = await ethers.getContractFactory("Crowdfund");
+        crowdfund = await Crowdfund.attach("0x32727661e770a43Cb44f1c81Cd37807F5C3c6Cf9")
 
-        crowdfund = await Crowdfund.deploy()
+        // crowdfund = await Crowdfund.deploy()
 
-        await crowdfund.deployed()
+        // await crowdfund.deployed()
+   
+
 
         wbnb = await ethers.getContractAt("IWBNB", wbnbAddress);
         dai = await ethers.getContractAt("IERC20", daiAddress);
         xrp = await ethers.getContractAt("IERC20", xrpAddress);
         busd = await ethers.getContractAt("IERC20", busdAddress);
 
-        const supportedTokensAddress = [
-          wbnbAddress, daiAddress, xrpAddress, busdAddress
-        ];
-        const correspondingPriceFeeds = [
-          bnbUsdPriceFeed, daiUsdPriceFeed, xrpUsdPriceFeed, busdUsdPriceFeed
-        ];
+        // const supportedTokensAddress = [
+        //   wbnbAddress, daiAddress, xrpAddress, busdAddress
+        // ];
+        // const correspondingPriceFeeds = [
+        //   bnbUsdPriceFeed, daiUsdPriceFeed, xrpUsdPriceFeed, busdUsdPriceFeed
+        // ];
 
-        const setSupportedTokensTx = await crowdfund.setSupportedTokensAddress(
-          supportedTokensAddress
-        );
-        await setSupportedTokensTx.wait(1);
+        // const setSupportedTokensTx = await crowdfund.setSupportedTokensAddress(
+        //   supportedTokensAddress
+        // );
+        // await setSupportedTokensTx.wait(1);
 
-        for (let i = 0; i < supportedTokensAddress.length; i++) {
-          let setTokenToPriceFeedTx = await crowdfund.setTokenToPriceFeed(
-            supportedTokensAddress[i],
-            correspondingPriceFeeds[i]
-          );
-          await setTokenToPriceFeedTx.wait(1);
-        }
+        // for (let i = 0; i < supportedTokensAddress.length; i++) {
+        //   let setTokenToPriceFeedTx = await crowdfund.setTokenToPriceFeed(
+        //     supportedTokensAddress[i],
+        //     correspondingPriceFeeds[i]
+        //   );
+        //   await setTokenToPriceFeedTx.wait(1);
+        // }
       });
 
       describe("Launching a Project", function () {
@@ -129,6 +132,8 @@ developmentChains.includes(network.name)
           const totalRaisedInDollarsAfter = fromWei(
             await crowdfund.getTotalAmountRaisedInDollars(id)
           );
+
+          
         });
 
 
@@ -197,246 +202,111 @@ developmentChains.includes(network.name)
         });
       });
 
-      describe("Pledging to a project", function () {
-        beforeEach(async function () {
-          const startDay = (await now()) + duration.days(1);
-          const fundDuration = duration.days(10);
-          const goal = toWei(100); // 100 dollars
+      describe("Performing some tasks", function(){
+        it("should launch a project and pledge to the project", async function() {
+          // Launch a project
+          const startDay = await now();
+          const fundDuration = duration.seconds(40);
+          const goal = toWei(0.049); // 100 dollars
 
-          const launchTx = await crowdfund.launch(startDay, fundDuration, goal);
+          const launchTx = await crowdfund
+            .connect(user1)
+            .launch(startDay, fundDuration, goal);
           await launchTx.wait(1);
-        });
 
-        it("can only pledge with a supported token", async function () {
-          const [owner, id, startDay, endDay, goal] = await crowdfund.projects(
-            0
-          );
+          // Grab the project ID
+          const [, id, , , ] = await crowdfund.projects(1);
 
-          const unsupportedTokenAddress =
-            "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
+          // Pledge to the project
 
-          await expect(
-            crowdfund.pledge(id, unsupportedTokenAddress, toWei(20))
-          ).to.be.revertedWithCustomError(crowdfund, "TokenNotSupported");
-        });
+          await dai.approve(crowdfund.address, toWei(0.05))
 
-        it("user should be included as a backer after pledging", async function () {
-          await fastForwardTheTime(duration.days(1) + 10);
-
-          const [owner, id, startDay, endDay, goal] = await crowdfund.projects(
-            0
-          );
-
-          await test1.transfer(user1.address, toWei(500));
-          await test1.transfer(user2.address, toWei(500));
-
-          const user1BalanceBefore = await test1.balanceOf(user1.address);
-
-          await test1.connect(user1).approve(crowdfund.address, toWei(40));
-          await test1.connect(user2).approve(crowdfund.address, toWei(40));
-
-          const pledgeTx1 = await crowdfund
-            .connect(user1)
-            .pledge(id, test1.address, toWei(20));
-          await pledgeTx1.wait(1);
-
-          const user1BalanceAfter = await test1.balanceOf(user1.address);
-
-          expect(user1BalanceAfter).to.equal(user1BalanceBefore.sub(toWei(20)));
-          expect(await test1.balanceOf(crowdfund.address)).to.equal(toWei(20));
-
-          const pledgeTx2 = await crowdfund
-            .connect(user1)
-            .pledge(id, test1.address, toWei(20));
-          await pledgeTx2.wait(1);
-
-          const pledgeTx3 = await crowdfund
-            .connect(user2)
-            .pledge(id, test1.address, toWei(40));
-          await pledgeTx3.wait(1);
-
-          const backers = await crowdfund.getBackers(id);
-
-          const [backer1, backer2] = backers;
-
-          assert.equal(backer1[2].toString(), toWei(40).toString());
-          assert.equal(backer2[2].toString(), toWei(40).toString());
-        });
-      });
-
-      describe("Unpledging to a project", function () {
-        beforeEach(async function () {
-          const startDay = (await now()) + duration.days(1);
-          const fundDuration = duration.days(10);
-          const goal = toWei(100); // 100 dollars
-
-          const launchTx = await crowdfund.launch(startDay, fundDuration, goal);
-          await launchTx.wait(1);
-        });
-
-        it("user should be able to unpledge to a project", async function () {
-          await fastForwardTheTime(duration.days(1) + 10);
-
-          const [owner, id, startDay, endDay, goal] = await crowdfund.projects(
-            0
-          );
-
-          await test1.transfer(user1.address, toWei(500));
-
-          const user1BalanceBefore = await test1.balanceOf(user1.address);
-
-          await test1.connect(user1).approve(crowdfund.address, toWei(40));
-
-          const pledgeTx = await crowdfund
-            .connect(user1)
-            .pledge(id, test1.address, toWei(20));
+          const pledgeTx = await crowdfund.pledge(id, dai.address, toWei(0.05));
           await pledgeTx.wait(1);
 
-          const user1BalanceAfter = await test1.balanceOf(user1.address);
+          // Wait for the duration to elapse (Make sure that the goal is reached)
 
-          expect(user1BalanceAfter).to.equal(user1BalanceBefore.sub(toWei(20)));
+          // Check if the owner is going to clam successfully
 
-          // Unpledging
-
-          const unpledgeTx = await crowdfund
-            .connect(user1)
-            .unpledge(id, test1.address, toWei(5));
-          await unpledgeTx.wait(1);
-
-          const user1BalanceAfterUnpledging = await test1.balanceOf(
-            user1.address
+          const projectOwnerBalanceBefore = fromWei(
+            await dai.balanceOf(user1.address)
           );
+          const backerBalanceBefore = fromWei(await dai.balanceOf(deployer));
 
-          const backers = await crowdfund.getBackers(id);
-
-          const [backer1] = backers;
-
-          assert.equal(backer1[2].toString(), toWei(15).toString());
-          assert.equal(
-            user1BalanceAfterUnpledging.toString(),
-            user1BalanceAfter.add(toWei(5)).toString()
-          );
-        });
-      });
-
-      describe("Claiming a project", function () {
-        beforeEach(async function () {
-          const startDay = (await now()) + duration.days(1);
-          const fundDuration = duration.days(10);
-          const goal = toWei(100); // 100 dollars
-
-          const launchTx = await crowdfund.launch(startDay, fundDuration, goal);
-          await launchTx.wait(1);
-        });
-
-        it("user should not be able to claim a project when the goal is reached", async function () {
-          await fastForwardTheTime(duration.days(1) + 10);
-
-          const [owner, id, startDay, endDay, goal] = await crowdfund.projects(
-            0
-          );
-
-          await test1.transfer(user1.address, toWei(500));
-          await test2.transfer(user2.address, toWei(500));
-          await test1.transfer(user3.address, toWei(500));
-
-          await test1.connect(user1).approve(crowdfund.address, toWei(500));
-          await test2.connect(user2).approve(crowdfund.address, toWei(500));
-          await test1.connect(user3).approve(crowdfund.address, toWei(500));
-
-          const pledgeTx1 = await crowdfund
-            .connect(user1)
-            .pledge(id, test1.address, toWei(50));
-          await pledgeTx1.wait(1);
-
-          await expect(crowdfund.claim(id)).to.be.revertedWithCustomError(
-            crowdfund,
-            "ProjectStillOpen"
-          );
-
-          const pledgeTx2 = await crowdfund
-            .connect(user2)
-            .pledge(id, test2.address, toWei(50));
-          await pledgeTx2.wait(1);
-
-          const pledgeTx3 = await crowdfund
-            .connect(user3)
-            .pledge(id, test1.address, toWei(20));
-          await pledgeTx3.wait(1);
-
-          const ownerTest1BalanceBefore = await test1.balanceOf(deployer);
-          const ownerTest2BalanceBefore = await test2.balanceOf(deployer);
-
-          const totalRaisedInDollars = fromWei(
+          const totalRaisedInDollarsBefore = fromWei(
             await crowdfund.getTotalAmountRaisedInDollars(id)
           );
 
-          const claimTx2 = await crowdfund.claim(id);
-          await claimTx2.wait(1);
+          const claimTx = await crowdfund.connect(user1).claim(id);
+          await claimTx.wait(1);
 
-          const ownerTest1BalanceAfter = await test1.balanceOf(deployer);
-          const ownerTest2BalanceAfter = await test2.balanceOf(deployer);
-
-          expect(ownerTest1BalanceAfter).to.equal(
-            ownerTest1BalanceBefore.add(toWei(70))
+          const projectOwnerBalanceAfter = fromWei(
+            await dai.balanceOf(user1.address)
           );
-          expect(ownerTest2BalanceAfter).to.equal(
-            ownerTest2BalanceBefore.add(toWei(50))
-          );
-        });
-      });
+          const backerBalanceAfter = fromWei(await dai.balanceOf(deployer));
 
-      describe("Refunding a project", function () {
-        beforeEach(async function () {
-          const startDay = (await now()) + duration.days(1);
-          const fundDuration = duration.days(10);
-          const goal = toWei(100); // 100 dollars
+          const totalRaisedInDollarsAfter = fromWei(
+            await crowdfund.getTotalAmountRaisedInDollars(id))
 
-          const launchTx = await crowdfund.launch(startDay, fundDuration, goal);
-          await launchTx.wait(1);
-        });
+        })
 
-        it("user should be able to able to refund", async function () {
-          await fastForwardTheTime(duration.days(1) + 10);
+        it("should launch a project and pledge to the project with BNB", async function() {
+          // Launch a project
+          const startDay = await now();
+          const fundDuration = duration.seconds(20);
+          const goal = toWei(0.049); // 100 dollars
 
-          const [owner, id, startDay, endDay, goal] = await crowdfund.projects(
-            0
-          );
-
-          await test1.transfer(user1.address, toWei(500));
-          await test1.connect(user1).approve(crowdfund.address, toWei(500));
-
-          await test2.transfer(user2.address, toWei(500));
-          await test2.connect(user2).approve(crowdfund.address, toWei(500));
-
-          const pledgeTx = await crowdfund
+          const launchTx = await crowdfund
             .connect(user1)
-            .pledge(id, test1.address, toWei(50));
+            .launch(startDay, fundDuration, goal);
+          await launchTx.wait(1);
+
+          // Grab the project ID
+          const [, id, , , ] = await crowdfund.projects(4);
+
+          // Pledge to the project
+
+          await wbnb.deposit({value: toWei(0.05)})
+          await wbnb.approve(crowdfund.address, toWei(0.02))
+
+            const backerBalanceBefore = fromWei(await wbnb.balanceOf(deployer));
+          const backerBnbBalanceBefore = fromWei(await ethers.provider.getBalance(deployer))
+
+          const code = await ethers.provider.getCode(crowdfund.address)
+
+          const pledgeTx = await crowdfund.pledge(id, wbnb.address, toWei(0.02));
           await pledgeTx.wait(1);
 
-          await expect(crowdfund.claim(id)).to.be.revertedWithCustomError(
-            crowdfund,
-            "ProjectStillOpen"
+          // Wait for the duration to elapse (Make sure that the goal is reached)
+
+          // Check if the owner is going to clam successfully
+
+          const backerBalanceAfter = fromWei(await wbnb.balanceOf(deployer));
+
+          const projectOwnerBalanceBefore = fromWei(
+            await wbnb.balanceOf(user1.address)
+          );
+          const projectOwnerBnbBalanceBefore = fromWei(await ethers.provider.getBalance(user1.address))
+
+          
+          const totalRaisedInDollarsBefore = fromWei(
+            await crowdfund.getTotalAmountRaisedInDollars(id)
           );
 
-          const pledgeTx2 = await crowdfund
-            .connect(user2)
-            .pledge(id, test2.address, toWei(30));
-          await pledgeTx2.wait(1);
+          const claimTx = await crowdfund.connect(user1).claim(id);
+          await claimTx.wait(1);
 
-          await fastForwardTheTime(duration.days(10) + 40);
-
-          const backerTest1BalanceBefore = await test1.balanceOf(user1.address);
-
-          const refundTx = await crowdfund.refund(id);
-          await refundTx.wait(1);
-
-          const backerTest1BalanceAfter = await test1.balanceOf(user1.address);
-
-          assert.equal(
-            backerTest1BalanceAfter.toString(),
-            backerTest1BalanceBefore.add(toWei(50)).toString()
+          const projectOwnerBalanceAfter = fromWei(
+            await wbnb.balanceOf(user1.address)
           );
-        });
-      });
+          const projectOwnerBnbBalanceAfter = fromWei(await ethers.provider.getBalance(user1.address))
+
+          
+          const totalRaisedInDollarsAfter = fromWei(
+            await crowdfund.getTotalAmountRaisedInDollars(id)
+          );
+
+
+        })
+      })
     });

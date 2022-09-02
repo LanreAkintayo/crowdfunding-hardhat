@@ -119,9 +119,11 @@ contract Crowdfund is ReentrancyGuard, Ownable {
             revert NotAvailableForPledging();
         }
 
-        IERC20 token = IERC20(tokenAddress);
-
-        token.transferFrom(msg.sender, address(this), amount);
+        if (tokenAddress == WBNB){
+            IWBNB(tokenAddress).transferFrom(msg.sender, address(this), amount);
+        } else{
+            IERC20(tokenAddress).transferFrom(msg.sender, address(this), amount);
+        }
 
         int256 index = checkPledgingWithToken(_id, tokenAddress);
 
@@ -154,19 +156,23 @@ contract Crowdfund is ReentrancyGuard, Ownable {
             backerInfo.tokenAddress != address(0) && backerInfo.amount >= amount
         ) {
             backers[_id][uint256(index)].amount -= amount;
-            IERC20 token = IERC20(tokenAddress);
-            require(
-                token.balanceOf(address(this)) >= amount,
-                "Insufficient Balance"
-            );
+            if (tokenAddress == WBNB){
+                require(address(this).balance >= amount,
+                "Insufficient Balance");
 
-            if (address(token) == WBNB){
                 IWBNB(WBNB).withdraw(amount);
                 (bool success, ) = msg.sender.call{value: amount}("");
                 require(success, "Transfer failed");
+
             } else{
+                IERC20 token = IERC20(tokenAddress);
+                require(
+                    token.balanceOf(address(this)) >= amount,
+                    "Insufficient Balance"
+                );
                 token.transfer(msg.sender, amount);
             }
+            
         } else {
             revert InvalidPledge();
         }
@@ -187,9 +193,9 @@ contract Crowdfund is ReentrancyGuard, Ownable {
       
         for (uint256 i = 0; i < backersInfo.length; i++) {
             BackerInfo memory backerInfo = backersInfo[i];
-            IERC20 token = IERC20(backerInfo.tokenAddress);
-            if (address(token) == WBNB){
-                console.log("address of token ", address(token));
+            
+            if (backerInfo.tokenAddress == WBNB){
+                console.log("address of token ", backerInfo.tokenAddress);
                 console.log("WBNB: ", WBNB);
                 console.log("backerInfo.amount", backerInfo.amount);
                 console.log("BNB Balance before: ", address(this).balance);
@@ -198,10 +204,10 @@ contract Crowdfund is ReentrancyGuard, Ownable {
                 IWBNB(WBNB).withdraw(backerInfo.amount);
                 console.log("BNB Balance after: ", address(this).balance);
 
-                // (bool success, ) = msg.sender.call{value: backerInfo.amount}("");
-                // require(success, "Transaction failed");
+                (bool success, ) = msg.sender.call{value: backerInfo.amount}("");
+                require(success, "Transaction failed");
             } else{
-                console.log("I am here instead");
+                IERC20 token = IERC20(backerInfo.tokenAddress);
                 token.transfer(msg.sender, backerInfo.amount);
             }
 
