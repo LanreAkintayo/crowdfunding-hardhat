@@ -60,9 +60,9 @@ developmentChains.includes(network.name)
 
 
         wbnb = await ethers.getContractAt("IWBNB", wbnbAddress);
-        dai = await ethers.getContractAt("IERC20", daiAddress);
-        xrp = await ethers.getContractAt("IERC20", xrpAddress);
-        busd = await ethers.getContractAt("IERC20", busdAddress);
+        // dai = await ethers.getContractAt("IERC20", daiAddress);
+        // xrp = await ethers.getContractAt("IERC20", xrpAddress);
+        // busd = await ethers.getContractAt("IERC20", busdAddress);
 
         // const supportedTokensAddress = [
         //   wbnbAddress, daiAddress, xrpAddress, busdAddress

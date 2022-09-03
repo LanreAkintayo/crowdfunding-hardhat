@@ -1,5 +1,10 @@
 const developmentChains = ["localhost", "hardhat"]
 const networkConfig = {
+    31337:{
+        name: "hardhat",
+        wbnbAddress: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        bnbUsdPriceFeed: "0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE"
+    },
     97: {
         name:"testnet",
         wbnbAddress: "0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd",

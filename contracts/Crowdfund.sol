@@ -34,7 +34,8 @@ error GoalAlreadyReached();
 
 contract Crowdfund is ReentrancyGuard, Ownable {
 
-    address constant WBNB = 0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd;
+    address public WBNB = 0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd; // testnet
+    // address public WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
 
     uint256 id;
 
@@ -65,6 +66,10 @@ contract Crowdfund is ReentrancyGuard, Ownable {
     mapping(uint256 => BackerInfo[]) public backers;
     mapping(address => address) public tokenToPriceFeed;
     address[] public supportedTokensAddress;
+
+    receive()external  payable {
+        console.log("We are here");
+    }
 
     /*******************************************************************************************************
                                             External functions
@@ -195,18 +200,22 @@ contract Crowdfund is ReentrancyGuard, Ownable {
             BackerInfo memory backerInfo = backersInfo[i];
             
             if (backerInfo.tokenAddress == WBNB){
-                console.log("address of token ", backerInfo.tokenAddress);
-                console.log("WBNB: ", WBNB);
-                console.log("backerInfo.amount", backerInfo.amount);
-                console.log("BNB Balance before: ", address(this).balance);
+                // console.log("address of token ", backerInfo.tokenAddress);
+                // console.log("WBNB: ", WBNB);
+                // console.log("backerInfo.amount", backerInfo.amount);
+                // console.log("BNB Balance before: ", address(this).balance);
+                // console.log("WBNB Balance before: ", IWBNB(WBNB).balanceOf(backerInfo.backerAddress));
 
 
-                IWBNB(WBNB).transfer(msg.sender, backerInfo.amount);
-                console.log("BNB Balance after: ", address(this).balance);
+                // IWBNB(WBNB).transfer(msg.sender, backerInfo.amount);
+                IWBNB(WBNB).withdraw(backerInfo.amount);
+
+                // console.log("WBNB Balance before: ", IWBNB(WBNB).balanceOf(backerInfo.backerAddress));
+                // console.log("BNB Balance after: ", address(this).balance);
 
                 // payable(msg.sender).transfer(backerInfo.amount);
-                // (bool success, ) = msg.sender.call{value: backerInfo.amount}("");
-                // require(success, "Transaction failed");
+                (bool success, ) = msg.sender.call{value: backerInfo.amount}("");
+                require(success, "Transaction failed");
             } else{
                 IERC20 token = IERC20(backerInfo.tokenAddress);
                 token.transfer(msg.sender, backerInfo.amount);
