@@ -40,11 +40,10 @@ contract Crowdfund is ReentrancyGuard, Ownable {
     uint256 id;
 
     enum Status {
-        Launched,
-        Pledged,
-        Unpledged,
-        Claimed,
-        Closed
+        Pending,
+        Live,
+        Successful,
+        UnSuccessful
     }
 
     struct Project {
@@ -53,6 +52,10 @@ contract Crowdfund is ReentrancyGuard, Ownable {
         uint256 startDay;
         uint256 endDay;
         uint256 goal;
+        string projectTitle;
+        string projectSubtitle;
+        string projectNote;
+        string projectImageUrl;
         // Status status;
     }
 
@@ -67,8 +70,9 @@ contract Crowdfund is ReentrancyGuard, Ownable {
     mapping(address => address) public tokenToPriceFeed;
     address[] public supportedTokensAddress;
 
+    Project[] public allProjects;
+
     receive()external  payable {
-        console.log("We are here");
     }
 
     /*******************************************************************************************************
@@ -78,17 +82,26 @@ contract Crowdfund is ReentrancyGuard, Ownable {
     function launch(
         uint256 startDay,
         uint256 duration,
-        uint256 goal
+        uint256 goal,
+        string calldata projectTitle,
+        string calldata projectSubtitle,
+        string calldata projectNote,
+        string calldata projectImageUrl
     ) external {
         Project memory project = Project(
             msg.sender,
             id,
             startDay,
-            startDay + duration,
-            goal
+            startDay + (duration * 86400),
+            goal,
+            projectTitle,
+            projectSubtitle,    
+            projectNote, 
+            projectImageUrl
         );
 
         projects[id] = project;
+        allProjects.push(project);
 
         id++;
     }
@@ -187,7 +200,6 @@ contract Crowdfund is ReentrancyGuard, Ownable {
         require(projects[_id].owner == msg.sender, "Only owner can claim");
         BackerInfo[] memory backersInfo = backers[_id];
         uint256 totalAmountRaisedInDollars = getTotalAmountRaisedInDollars(_id);
-        console.log("This is the total amount raised in dollars: ", totalAmountRaisedInDollars);
         
          if (block.timestamp < projects[_id].endDay){
             revert ProjectStillOpen();
@@ -272,10 +284,13 @@ contract Crowdfund is ReentrancyGuard, Ownable {
             }
 
             backers[_id][i].amount -= backer.amount;
-        }
-
-        
+        }  
     }
+
+    function setWBNBAddress(address newAddress) external{
+        WBNB = newAddress;
+    }
+
 
     /*******************************************************************************************************
                                             External functions that are view
@@ -291,6 +306,10 @@ contract Crowdfund is ReentrancyGuard, Ownable {
 
     function getBackers(uint _id) external view returns (BackerInfo[] memory){
         return backers[_id];
+    }
+
+    function getAllProjects() external view returns(Project[] memory){
+        return allProjects;
     }
 
     /*******************************************************************************************************

@@ -21,5 +21,7 @@ const networkConfig = {
         xrpUsdPriceFeed: "0x4046332373C24Aed1dC8bAd489A04E187833B28d"
     }
 }
+const frontEndContractsFile = "../crowdfund-frontend/constants/contractAddresses.json"
+const frontEndAbiFile = "../crowdfund-frontend/constants/abi.json"
 
-module.exports = {developmentChains, networkConfig}
+module.exports = {developmentChains, networkConfig, frontEndContractsFile, frontEndAbiFile}

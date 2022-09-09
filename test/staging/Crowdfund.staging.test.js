@@ -90,14 +90,18 @@ developmentChains.includes(network.name)
           const startDay = await now();
           const fundDuration = duration.seconds(30);
           const goal = toWei(0.049); // 100 dollars
+          const projectTitle = "Project Title"
+         const projectSubtitle = "Project Subtitle"
+         const projectNote = "project Note"
+         const projectImageUrl = "This is the url"
 
           const launchTx = await crowdfund
             .connect(user1)
-            .launch(startDay, fundDuration, goal);
+            .launch(startDay, fundDuration, goal, projectTitle, projectSubtitle, projectNote, projectImageUrl);
           await launchTx.wait(1);
         });
         it("should be able to pledge with an ERC20 token", async function () {
-          const [owner, id, startDay, endDay, goal] = await crowdfund.projects(
+          const [owner, id, startDay, endDay, goal, projectTitle] = await crowdfund.projects(
             0
           );
 
@@ -208,10 +212,14 @@ developmentChains.includes(network.name)
           const startDay = await now();
           const fundDuration = duration.seconds(40);
           const goal = toWei(0.049); // 100 dollars
+          const projectTitle = "Project Title"
+         const projectSubtitle = "Project Subtitle"
+         const projectNote = "project Note"
+         const projectImageUrl = "This is the url"
 
           const launchTx = await crowdfund
             .connect(user1)
-            .launch(startDay, fundDuration, goal);
+            .launch(startDay, fundDuration, goal, projectTitle, projectSubtitle, projectNote, projectImageUrl);
           await launchTx.wait(1);
 
           // Grab the project ID
@@ -255,10 +263,14 @@ developmentChains.includes(network.name)
           const startDay = await now();
           const fundDuration = duration.seconds(20);
           const goal = toWei(0.049); // 100 dollars
+          const projectTitle = "Project Title"
+         const projectSubtitle = "Project Subtitle"
+         const projectNote = "project Note"
+         const projectImageUrl = "This is the url"
 
           const launchTx = await crowdfund
             .connect(user1)
-            .launch(startDay, fundDuration, goal);
+            .launch(startDay, fundDuration, goal, projectTitle, projectSubtitle, projectNote, projectImageUrl);
           await launchTx.wait(1);
 
           // Grab the project ID

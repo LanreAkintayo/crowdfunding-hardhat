@@ -8,7 +8,7 @@ require("hardhat-deploy");
 const MNEMONIC = process.env.MNEMONIC;
 const TESTNET_URL = process.env.TESTNET_URL
 const BSC_URL = process.env.BSC_URL
-
+const BSCSCAN_API_KEY = process.env.BSCSCAN_API_KEY
 
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -41,6 +41,34 @@ module.exports = {
       blockConfirmations: 6,
       accounts: { mnemonic: MNEMONIC },
     },
+  },
+  // etherscan: {
+  //   apiKey: {
+  //     testnet: BSCSCAN_API_KEY
+  //   },
+  //   customChains: [
+  //     {
+  //       network: "testnet",
+  //       chainId: 97,
+  //       urls: {
+  //         apiURL: "https://api-testnet.bscscan.com",
+  //         browserURL: "https://testnet.bscscan.com"
+  //       }
+  //     }
+  //   ]
+  // },
+  etherscan: {
+    apiKey: BSCSCAN_API_KEY,
+       customChains: [
+      {
+        network: "testnet",
+        chainId: 97,
+        urls: {
+          apiURL: "https://api-testnet.bscscan.com",
+          browserURL: "https://testnet.bscscan.com"
+        }
+      }
+    ]
   },
 
   namedAccounts: {
