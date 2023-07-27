@@ -41,10 +41,15 @@ async function setupContract(){
         bnbUsdPriceFeed, daiUsdPriceFeed, xrpUsdPriceFeed, busdUsdPriceFeed
       ];
 
+      console.log("Setting up token addresses")
+
       const setSupportedTokensTx = await crowdfund.setSupportedTokensAddress(
         supportedTokensAddress
       );
       await setSupportedTokensTx.wait(1);
+
+      console.log("Setting up token addresses with price feed")
+
 
       for (let i = 0; i < supportedTokensAddress.length; i++) {
         let setTokenToPriceFeedTx = await crowdfund.setTokenToPriceFeed(
@@ -53,6 +58,9 @@ async function setupContract(){
         );
         await setTokenToPriceFeedTx.wait(1);
       }
+
+      console.log("Set up completed")
+      
 }
 
 

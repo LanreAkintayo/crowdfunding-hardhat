@@ -40,10 +40,9 @@ contract Crowdfund is ReentrancyGuard, Ownable {
     uint256 id;
 
     enum Status {
-        Pending,
-        Live,
-        Successful,
-        UnSuccessful
+        None,
+        Claimed,
+        Refunded
     }
 
     struct Project {
@@ -56,7 +55,9 @@ contract Crowdfund is ReentrancyGuard, Ownable {
         string projectSubtitle;
         string projectNote;
         string projectImageUrl;
-        // Status status;
+        bool isFinalized;
+        bool isClaimed;
+        bool isRefunded;
     }
 
     struct BackerInfo {
@@ -92,12 +93,15 @@ contract Crowdfund is ReentrancyGuard, Ownable {
             msg.sender,
             id,
             startDay,
-            startDay + (duration * 86400),
+            startDay + duration,
             goal,
             projectTitle,
             projectSubtitle,    
             projectNote, 
-            projectImageUrl
+            projectImageUrl,
+            false,
+            false,
+            false
         );
 
         projects[id] = project;
@@ -235,6 +239,10 @@ contract Crowdfund is ReentrancyGuard, Ownable {
 
             backers[_id][i].amount -= backerInfo.amount;
         }
+
+         projects[_id].isFinalized = true;
+         projects[_id].isClaimed = true;
+
     }
 
     function setTokenToPriceFeed(address tokenAddress, address priceFeed)
@@ -285,11 +293,17 @@ contract Crowdfund is ReentrancyGuard, Ownable {
 
             backers[_id][i].amount -= backer.amount;
         }  
+        projects[_id].isFinalized = true;
+        projects[_id].isRefunded = true;
     }
 
     function setWBNBAddress(address newAddress) external{
         WBNB = newAddress;
     }
+
+    // function isFinalized(uint _id) external {
+    //     projects[_id].isFinalized = true;
+    // }
 
 
     /*******************************************************************************************************
